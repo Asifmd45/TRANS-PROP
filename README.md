@@ -10,6 +10,34 @@ Flow:
 
 `React -> Express -> FastAPI -> Express -> React`
 
+## How Crystal Description Flows Through ML Layer
+
+When you enter a crystal/material description on the `/predict` page, this is what happens:
+
+1. React sends your text to Express as a JSON request:
+
+```json
+{
+  "text": "your crystal description"
+}
+```
+
+2. Express forwards that request to FastAPI (`/predict`) without changing the ML logic.
+3. FastAPI calls the existing prediction pipeline in `LLM-Prop/models_deployment/predict_all.py`.
+4. The ML layer runs the trained property-specific predictors and computes outputs.
+5. FastAPI returns a unified JSON response to Express.
+6. Express returns the same response to React.
+7. React renders those predicted values on the UI.
+
+Displayed prediction fields:
+
+- `is_gap_direct`
+- `energy_per_atom`
+- `formation_energy_per_atom`
+- `band_gap`
+- `e_above_hull`
+- `volume`
+
 ## 1. Prerequisites
 
 Install these first:
