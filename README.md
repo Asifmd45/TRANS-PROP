@@ -1,52 +1,32 @@
 # TRANS-PROP Local Setup Guide
 
-This project runs with 3 local services:
+TRANS-PROP runs as a 3-layer local stack:
 
 - React frontend: `frontend`
 - Express middleware: `express-server`
 - FastAPI ML backend: `LLM-Prop/models_deployment`
 
-Flow:
+Request flow:
 
 `React -> Express -> FastAPI -> Express -> React`
 
-## How Crystal Description Flows Through ML Layer
+## Quick Start Checklist
 
-When you enter a crystal/material description on the `/predict` page, this is what happens:
-
-1. React sends your text to Express as a JSON request:
-
-```json
-{
-  "text": "your crystal description"
-}
-```
-
-2. Express forwards that request to FastAPI (`/predict`) without changing the ML logic.
-3. FastAPI calls the existing prediction pipeline in `LLM-Prop/models_deployment/predict_all.py`.
-4. The ML layer runs the trained property-specific predictors and computes outputs.
-5. FastAPI returns a unified JSON response to Express.
-6. Express returns the same response to React.
-7. React renders those predicted values on the UI.
-
-Displayed prediction fields:
-
-- `is_gap_direct`
-- `energy_per_atom`
-- `formation_energy_per_atom`
-- `band_gap`
-- `e_above_hull`
-- `volume`
+1. Install prerequisites.
+2. Clone repository.
+3. Download required ML assets (data + checkpoints).
+4. Create and activate Python virtual environment.
+5. Install Python and Node dependencies.
+6. Start 3 services (FastAPI, Express, React).
+7. Open `http://localhost:8080/predict`.
 
 ## 1. Prerequisites
-
-Install these first:
 
 - Python `3.10+`
 - Node.js `18+`
 - npm `9+`
 
-Check versions:
+Verify versions:
 
 ```bash
 python --version
@@ -61,9 +41,40 @@ git clone <your-repo-url>
 cd <repo-folder-name>
 ```
 
-## 3. Create and Activate Python Virtual Environment
+## 3. Download Required ML Assets (Data + Checkpoints)
 
-Create venv:
+These files are required for inference output and are not stored in this GitHub repository.
+
+- Data folder (Google Drive):
+  - https://drive.google.com/drive/folders/1DA2osXEhV0gcONDXE2-E-gqGWMqNsJ84?usp=drive_link
+- Checkpoints folder (Google Drive, classification + regression):
+  - https://drive.google.com/drive/folders/1jruYBaxGfU7MpgVQRCHr9OolkBDIMgAx?usp=drive_link
+
+Place files exactly at these paths:
+
+- `LLM-Prop/data/samples/train_data.csv`
+- `LLM-Prop/checkpoints/samples/classification/best_checkpoint_for_is_gap_direct.pt`
+- `LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_energy_per_atom.pt`
+- `LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_fepa.pt`
+- `LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_band_gap.pt`
+- `LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_e_above_hull.pt`
+- `LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_volume.pt`
+
+Quick check on Windows PowerShell:
+
+```powershell
+Test-Path "LLM-Prop/data/samples/train_data.csv"
+Test-Path "LLM-Prop/checkpoints/samples/classification/best_checkpoint_for_is_gap_direct.pt"
+Test-Path "LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_energy_per_atom.pt"
+Test-Path "LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_fepa.pt"
+Test-Path "LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_band_gap.pt"
+Test-Path "LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_e_above_hull.pt"
+Test-Path "LLM-Prop/checkpoints/samples/regression/best_checkpoint_for_volume.pt"
+```
+
+## 4. Create and Activate Python Virtual Environment
+
+Create:
 
 ```bash
 python -m venv .venv
@@ -87,16 +98,16 @@ Activate on macOS/Linux:
 source .venv/bin/activate
 ```
 
-## 4. Install Dependencies
+## 5. Install Dependencies
 
-Python dependencies:
+Install Python packages:
 
 ```bash
 pip install -r LLM-Prop/requirements.txt
 pip install fastapi uvicorn
 ```
 
-Node dependencies:
+Install Node packages:
 
 ```bash
 cd express-server
@@ -108,9 +119,9 @@ npm install
 cd ..
 ```
 
-## 5. Run Locally (Open 3 Terminals)
+## 6. Run Locally (Open 3 Terminals)
 
-Use three separate terminals and run one command set in each.
+Run each service in a separate terminal.
 
 Terminal A: FastAPI backend (port 8000)
 
@@ -133,11 +144,11 @@ cd frontend
 npm run dev
 ```
 
-Open in browser:
+Open:
 
 `http://localhost:8080/predict`
 
-## 6. Health Checks
+## 7. Health Checks
 
 FastAPI:
 
@@ -151,9 +162,9 @@ Express:
 curl http://127.0.0.1:5000/health
 ```
 
-## 7. Optional API Test
+## 8. Optional API Test
 
-Run a prediction through Express:
+Test prediction through Express:
 
 ```bash
 curl -X POST http://127.0.0.1:5000/api/predict \
@@ -161,12 +172,40 @@ curl -X POST http://127.0.0.1:5000/api/predict \
   -d "{\"text\":\"Rb2NaPrCl6 is perovskite-derived and crystallizes in the cubic Fm-3m space group.\"}"
 ```
 
+## How Crystal Description Flows Through the ML Layer
+
+When you enter a crystal/material description on `/predict`, the request path is:
+
+1. React sends JSON to Express:
+
+```json
+{
+  "text": "your crystal description"
+}
+```
+
+2. Express forwards the request to FastAPI (`/predict`) without changing ML logic.
+3. FastAPI calls the existing inference pipeline in `LLM-Prop/models_deployment/predict_all.py`.
+4. Predictor modules load model checkpoints/tokenizer/data and compute outputs.
+5. FastAPI returns a unified response to Express.
+6. Express returns the response to React.
+7. React displays prediction values in the UI.
+
+Displayed output fields:
+
+- `is_gap_direct`
+- `energy_per_atom`
+- `formation_energy_per_atom`
+- `band_gap`
+- `e_above_hull`
+- `volume`
+
 ## Troubleshooting
 
 - `Failed to fetch` in frontend:
-  - Confirm FastAPI (`8000`) and Express (`5000`) are both running.
+  - Confirm FastAPI (`8000`) and Express (`5000`) are running.
 - Port already in use:
-  - Stop old process on that port, then restart services.
+  - Stop existing process on that port, then restart services.
 - PowerShell blocks virtual environment activation:
   - Run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
   - Then run `.\.venv\Scripts\Activate.ps1` again.
@@ -175,4 +214,4 @@ curl -X POST http://127.0.0.1:5000/api/predict \
 
 ## Notes
 
-- Keep local artifacts out of git (`.venv`, editor folders, large datasets, checkpoints).
+- Do not commit local runtime artifacts such as `.venv`, editor folders, large datasets, or checkpoints.
