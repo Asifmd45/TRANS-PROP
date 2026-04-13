@@ -140,6 +140,7 @@ app.post("/api/predict", requireAuth, async (req, res) => {
     }
 
     const savedPrediction = await Prediction.create({
+      userId: req.user.userId,
       inputText,
       prediction: {
         is_gap_direct: data.is_gap_direct,
@@ -167,7 +168,7 @@ app.get("/api/predictions", requireAuth, async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 20, 100);
 
-    const history = await Prediction.find({}, { __v: 0 })
+    const history = await Prediction.find({ userId: req.user.userId }, { __v: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();

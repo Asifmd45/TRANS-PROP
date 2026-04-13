@@ -19,6 +19,7 @@ export default function Login() {
   const [showPw,   setShowPw]   = useState(false);
   const [focused,  setFocused]  = useState(null);
   const [loading,  setLoading]  = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error,    setError]    = useState("");
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,8 +44,8 @@ export default function Login() {
 
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user || {}));
-
-      navigate(fromPath, { replace: true });
+      setSubmitted(true);
+      setTimeout(() => navigate(fromPath, { replace: true }), 1200);
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
@@ -132,110 +133,129 @@ export default function Login() {
             </div>
 
             <div className="p-10 relative z-20 pointer-events-auto">
-              <div className="mb-7">
-                <h3 className="text-xl font-bold text-foreground">Sign in</h3>
-                <p className="text-muted-foreground text-sm mt-1">Use your account credentials to continue.</p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Email
-                  </label>
+              {submitted ? (
+                <div className="flex flex-col items-center justify-center h-full py-10 animate-fade-in-up text-center">
                   <div
-                    className="relative rounded-xl overflow-hidden transition-all duration-300"
+                    className="w-20 h-20 rounded-full flex items-center justify-center mb-5"
                     style={{
-                      boxShadow: focused === "email"
-                        ? "0 0 0 2px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.1)"
-                        : "none",
+                      background: "linear-gradient(135deg, hsl(142 76% 36% / 0.3), hsl(142 76% 36% / 0.1))",
+                      border: "2px solid hsl(142 76% 36% / 0.5)",
+                      boxShadow: "0 0 40px hsl(142 76% 36% / 0.3)",
                     }}
                   >
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      onFocus={() => setFocused("email")}
-                      onBlur={() => setFocused(null)}
-                      placeholder="you@example.com"
-                      required
-                      className="relative z-30 pointer-events-auto w-full bg-muted/80 border border-border pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none rounded-xl transition-colors"
-                    />
+                    <Check className="w-10 h-10 text-green-400" />
                   </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">Sign in successful!</h3>
+                  <p className="text-sm text-muted-foreground">Redirecting you to predictions…</p>
                 </div>
+              ) : (
+                <>
+                  <div className="mb-7">
+                    <h3 className="text-xl font-bold text-foreground">Sign in</h3>
+                    <p className="text-muted-foreground text-sm mt-1">Use your account credentials to continue.</p>
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Password
-                  </label>
-                  <div
-                    className="relative rounded-xl overflow-hidden transition-all duration-300"
-                    style={{
-                      boxShadow: focused === "password"
-                        ? "0 0 0 2px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.1)"
-                        : "none",
-                    }}
-                  >
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <Lock className="w-4 h-4 text-muted-foreground" />
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Email
+                      </label>
+                      <div
+                        className="relative rounded-xl overflow-hidden transition-all duration-300"
+                        style={{
+                          boxShadow: focused === "email"
+                            ? "0 0 0 2px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.1)"
+                            : "none",
+                        }}
+                      >
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          onFocus={() => setFocused("email")}
+                          onBlur={() => setFocused(null)}
+                          placeholder="you@example.com"
+                          required
+                          className="relative z-30 pointer-events-auto w-full bg-muted/80 border border-border pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none rounded-xl transition-colors"
+                        />
+                      </div>
                     </div>
-                    <input
-                      type={showPw ? "text" : "password"}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      onFocus={() => setFocused("password")}
-                      onBlur={() => setFocused(null)}
-                      placeholder="••••••••"
-                      required
-                      className="relative z-30 pointer-events-auto w-full bg-muted/80 border border-border pl-10 pr-11 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none rounded-xl transition-colors"
-                    />
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Password
+                      </label>
+                      <div
+                        className="relative rounded-xl overflow-hidden transition-all duration-300"
+                        style={{
+                          boxShadow: focused === "password"
+                            ? "0 0 0 2px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.1)"
+                            : "none",
+                        }}
+                      >
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <Lock className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <input
+                          type={showPw ? "text" : "password"}
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          onFocus={() => setFocused("password")}
+                          onBlur={() => setFocused(null)}
+                          placeholder="••••••••"
+                          required
+                          className="relative z-30 pointer-events-auto w-full bg-muted/80 border border-border pl-10 pr-11 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none rounded-xl transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPw(s => !s)}
+                          className="absolute z-40 pointer-events-auto right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          tabIndex={-1}
+                        >
+                          {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
                     <button
-                      type="button"
-                      onClick={() => setShowPw(s => !s)}
-                      className="absolute z-40 pointer-events-auto right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
+                      type="submit"
+                      disabled={loading || !email.trim() || !password}
+                      className="relative w-full py-3.5 rounded-xl font-bold text-sm overflow-hidden group mt-1 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{
+                        background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))",
+                        boxShadow: "0 0 30px hsl(var(--primary) / 0.3)",
+                      }}
                     >
-                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      <span className="relative z-10 flex items-center justify-center gap-2 text-black">
+                        {loading ? "Signing In..." : "Sign In"}
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
                     </button>
+
+                    {error && (
+                      <p className="text-xs text-destructive">{error}</p>
+                    )}
+                  </form>
+
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">OR</span>
+                    <div className="flex-1 h-px bg-border" />
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={loading || !email.trim() || !password}
-                  className="relative w-full py-3.5 rounded-xl font-bold text-sm overflow-hidden group mt-1 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))",
-                    boxShadow: "0 0 30px hsl(var(--primary) / 0.3)",
-                  }}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2 text-black">
-                    {loading ? "Signing In..." : "Sign In"}
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
-                </button>
-
-                {error && (
-                  <p className="text-xs text-destructive">{error}</p>
-                )}
-              </form>
-
-              <div className="flex items-center gap-3 my-5">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground">OR</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-
-              <Link
-                to="/signup"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all group"
-              >
-                <Sparkles className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                Create a free account
-              </Link>
+                  <Link
+                    to="/signup"
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all group"
+                  >
+                    <Sparkles className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                    Create a free account
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

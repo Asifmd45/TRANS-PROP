@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const predictionSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     inputText: {
       type: String,
       required: true,
