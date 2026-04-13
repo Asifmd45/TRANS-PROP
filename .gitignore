@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Node.js
+node_modules/
+frontend/node_modules/
+express-server/node_modules/
+frontend/dist/
+express-server/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build/cache artifacts
+coverage/
+.cache/
+
+# Optional large ML/runtime artifacts (keep local)
+LLM-Prop/checkpoints/
+LLM-Prop/data/
