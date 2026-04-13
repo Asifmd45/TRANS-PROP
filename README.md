@@ -119,6 +119,41 @@ npm install
 cd ..
 ```
 
+## 5.1 Database Setup (MongoDB Atlas + .env)
+
+MongoDB is required for authentication and prediction history.
+
+1. Create a MongoDB Atlas account:
+  - Go to https://www.mongodb.com/atlas
+  - Create a free cluster.
+
+2. Create database access user:
+  - Atlas Dashboard -> Database Access -> Add New Database User
+  - Save username/password.
+
+3. Allow network access:
+  - Atlas Dashboard -> Network Access -> Add IP Address
+  - For local testing, you can temporarily allow `0.0.0.0/0`.
+
+4. Get connection string:
+  - Atlas Dashboard -> Clusters -> Connect -> Drivers
+  - Copy the `mongodb+srv://...` URI.
+
+5. Configure Express env file:
+  - Copy `express-server/.env.example` to `express-server/.env`
+  - Fill values:
+
+```env
+MONGODB_URI=<your_mongodb_atlas_connection_string>
+JWT_SECRET=<your_random_jwt_secret>
+FASTAPI_URL=http://127.0.0.1:8000
+PORT=5000
+```
+
+Notes:
+- Do not commit `.env`.
+- `.env.example` is tracked as template only.
+
 ## 6. Run Locally (Open 3 Terminals)
 
 Run each service in a separate terminal.

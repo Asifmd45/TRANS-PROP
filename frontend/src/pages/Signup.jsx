@@ -3,17 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, Atom, ArrowRight, Check, ArrowLeft } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
-const STRENGTH = (pw) => {
-  if (!pw) return 0;
-  let s = 0;
-  if (pw.length >= 8) s++;
-  if (/[A-Z]/.test(pw)) s++;
-  if (/[0-9]/.test(pw)) s++;
-  if (/[^A-Za-z0-9]/.test(pw)) s++;
-  return s;
-};
-const STRENGTH_LABEL = ["", "Weak", "Fair", "Good", "Strong"];
-const STRENGTH_COLOR = ["", "#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
+const EXPRESS_BASE_URL = import.meta.env.VITE_EXPRESS_BASE_URL || "";
 
 const benefits = [
   "Unlimited crystal property predictions",
@@ -21,30 +11,21 @@ const benefits = [
   "Access batch processing mode",
 ];
 
-export default function Signup() {
-  const [name,      setName]      = useState("");
-  const [email,     setEmail]     = useState("");
-  const [password,  setPassword]  = useState("");
-  const [confirm,   setConfirm]   = useState("");
-  const [showPw,    setShowPw]    = useState(false);
-  const [showCf,    setShowCf]    = useState(false);
-  const [focused,   setFocused]   = useState(null);
-  const [submitted, setSubmitted] = useState(false);
-  const navigate = useNavigate();
-
-  const pwMatch  = confirm === "" || password === confirm;
-  const strength = STRENGTH(password);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (password !== confirm) return;
-    setSubmitted(true);
-    setTimeout(() => navigate("/login"), 2000);
-  };
-
-  const Field = ({
-    id, label, type, value, onChange, placeholder, icon: Icon, showToggle, show, onToggle,
-  }) => (
+function Field({
+  id,
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  showToggle,
+  show,
+  onToggle,
+  focused,
+  setFocused,
+}) {
+  return (
     <div className="space-y-1.5">
       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
       <div
@@ -66,14 +47,14 @@ export default function Signup() {
           onBlur={() => setFocused(null)}
           placeholder={placeholder}
           required
-          className="w-full bg-muted/80 border border-border pl-10 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none rounded-xl transition-colors"
+          className="relative z-30 pointer-events-auto w-full bg-muted/80 border border-border pl-10 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none rounded-xl transition-colors"
         />
         {showToggle && (
           <button
             type="button"
             onClick={onToggle}
             tabIndex={-1}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute z-40 pointer-events-auto right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -81,6 +62,44 @@ export default function Signup() {
       </div>
     </div>
   );
+}
+
+export default function Signup() {
+  const [name,      setName]      = useState("");
+  const [email,     setEmail]     = useState("");
+  const [password,  setPassword]  = useState("");
+  const [showPw,    setShowPw]    = useState(false);
+  const [focused,   setFocused]   = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${EXPRESS_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.detail || "Signup failed");
+      }
+
+      setSubmitted(true);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err) {
+      setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
@@ -89,11 +108,11 @@ export default function Signup() {
       </Link>
       <AnimatedBackground />
 
-      <div className="absolute inset-0 bg-background/70 z-[1]" />
+      <div className="absolute inset-0 bg-background/70 z-[1] pointer-events-none" />
       <div className="absolute top-0 right-1/4 w-[600px] h-[350px] rounded-full blur-3xl bg-secondary/8 z-[1] pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] rounded-full blur-3xl bg-primary/6 z-[1] pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-[900px] mx-auto px-4 py-16">
+      <div className="relative z-20 w-full max-w-[900px] mx-auto px-4 py-16 pointer-events-auto">
         <div
           className="rounded-3xl overflow-hidden animate-fade-in-up"
           style={{
@@ -165,7 +184,7 @@ export default function Signup() {
             </div>
 
             {/* Right panel — form */}
-            <div className="p-10">
+            <div className="p-10 relative z-20 pointer-events-auto">
               {submitted ? (
                 <div className="flex flex-col items-center justify-center h-full py-10 animate-fade-in-up text-center">
                   <div
@@ -190,41 +209,19 @@ export default function Signup() {
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <Field id="name" label="Full Name" type="text" value={name}
-                      onChange={setName} placeholder="Jane Doe" icon={User} />
+                      onChange={setName} placeholder="Jane Doe" icon={User}
+                      focused={focused} setFocused={setFocused} />
                     <Field id="email" label="Email" type="email" value={email}
-                      onChange={setEmail} placeholder="you@example.com" icon={Mail} />
+                      onChange={setEmail} placeholder="you@example.com" icon={Mail}
+                      focused={focused} setFocused={setFocused} />
                     <Field id="password" label="Password" type="password" value={password}
                       onChange={setPassword} placeholder="••••••••" icon={Lock}
-                      showToggle show={showPw} onToggle={() => setShowPw(s => !s)} />
-
-                    {/* Password strength */}
-                    {password.length > 0 && (
-                      <div>
-                        <div className="flex gap-1 mb-1">
-                          {[1, 2, 3, 4].map(i => (
-                            <div
-                              key={i}
-                              className="flex-1 h-1 rounded-full transition-all duration-500"
-                              style={{
-                                background: i <= strength ? STRENGTH_COLOR[strength] : "hsl(var(--border))",
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-[11px]" style={{ color: STRENGTH_COLOR[strength] }}>
-                          {STRENGTH_LABEL[strength]}
-                        </p>
-                      </div>
-                    )}
-
-                    <Field id="confirm" label="Confirm Password" type="password" value={confirm}
-                      onChange={setConfirm} placeholder="••••••••" icon={Lock}
-                      showToggle show={showCf} onToggle={() => setShowCf(s => !s)} />
-                    {!pwMatch && <p className="text-xs text-destructive -mt-2">Passwords do not match</p>}
+                      showToggle show={showPw} onToggle={() => setShowPw(s => !s)}
+                      focused={focused} setFocused={setFocused} />
 
                     <button
                       type="submit"
-                      disabled={!pwMatch || !name || !email || !password}
+                      disabled={!name || !email || !password || loading}
                       className="relative w-full py-3.5 rounded-xl font-bold text-sm overflow-hidden group mt-1 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{
                         background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))",
@@ -232,11 +229,15 @@ export default function Signup() {
                       }}
                     >
                       <span className="relative z-10 flex items-center justify-center gap-2 text-black">
-                        Create Account
+                        {loading ? "Creating Account..." : "Create Account"}
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </span>
                       <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
                     </button>
+
+                    {error && (
+                      <p className="text-xs text-destructive">{error}</p>
+                    )}
                   </form>
                 </>
               )}

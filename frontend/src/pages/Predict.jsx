@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -8,6 +9,7 @@ import {
 } from "lucide-react";
 
 const EXPRESS_BASE_URL = import.meta.env.VITE_EXPRESS_BASE_URL || "";
+const TOKEN_KEY = "llmprop_token";
 
 const chatResponses = {
   nacl:  "Sodium chloride (NaCl) crystallizes in a rock salt structure (Fm-3m) with a face-centered cubic lattice. Lattice parameter a = 5.64 Å. Each Na⁺ is surrounded by 6 Cl⁻ ions.",
@@ -18,10 +20,14 @@ const chatResponses = {
 };
 
 export default function Predict() {
+  const navigate = useNavigate();
   const [input,   setInput]   = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [revealed, setRevealed] = useState(false);
 
   // Chat state
@@ -55,6 +61,46 @@ export default function Predict() {
     { property: "volume", value: Number(prediction.volume).toFixed(6) },
   ]);
 
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    setHistoryError("");
+
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const response = await fetch(`${EXPRESS_BASE_URL}/api/predictions?limit=12`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Could not fetch prediction history");
+      }
+
+      const data = await response.json();
+      setHistory(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setHistoryError(err.message || "Could not fetch prediction history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
   const handlePredict = async () => {
     if (!input.trim()) return;
 
@@ -64,11 +110,26 @@ export default function Predict() {
     setRevealed(false);
 
     try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
       const response = await fetch(`${EXPRESS_BASE_URL}/api/predict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ text: input.trim() }),
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        navigate("/login", { replace: true });
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -77,6 +138,7 @@ export default function Predict() {
 
       const prediction = await response.json();
       setResults(formatResults(prediction));
+      await loadHistory();
     } catch (err) {
       setError(err.message || "Could not connect to the API");
     } finally {
@@ -198,6 +260,73 @@ export default function Predict() {
               </div>
             </div>
           )}
+
+          {/* Prediction history */}
+          <div className="glass-card rounded-2xl p-6 mt-8 animate-fade-in-up" style={{ animationDelay: "320ms" }}>
+            <h2 className="text-base font-semibold text-foreground mb-5 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Prediction History
+            </h2>
+
+            {historyLoading && (
+              <p className="text-sm text-muted-foreground">Loading history...</p>
+            )}
+
+            {historyError && (
+              <p className="text-sm text-red-400">{historyError}</p>
+            )}
+
+            {!historyLoading && !historyError && history.length === 0 && (
+              <p className="text-sm text-muted-foreground">No predictions saved yet.</p>
+            )}
+
+            {!historyLoading && !historyError && history.length > 0 && (
+              <div className="space-y-3">
+                {history.map((item) => (
+                  <div
+                    key={item._id}
+                    className="rounded-xl p-4 bg-muted/60 border border-border hover:border-primary/40 transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.inputText}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground whitespace-nowrap">
+                        {new Date(item.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      <div className="rounded-lg px-2 py-1.5 bg-background/50 border border-border">
+                        <p className="text-[10px] text-muted-foreground">is_gap_direct</p>
+                        <p className="text-xs font-semibold text-primary font-mono">{item.prediction.is_gap_direct}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5 bg-background/50 border border-border">
+                        <p className="text-[10px] text-muted-foreground">energy_per_atom</p>
+                        <p className="text-xs font-semibold text-primary font-mono">{Number(item.prediction.energy_per_atom).toFixed(6)}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5 bg-background/50 border border-border">
+                        <p className="text-[10px] text-muted-foreground">formation_energy_per_atom</p>
+                        <p className="text-xs font-semibold text-primary font-mono">{Number(item.prediction.formation_energy_per_atom).toFixed(6)}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5 bg-background/50 border border-border">
+                        <p className="text-[10px] text-muted-foreground">band_gap</p>
+                        <p className="text-xs font-semibold text-primary font-mono">{Number(item.prediction.band_gap).toFixed(6)}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5 bg-background/50 border border-border">
+                        <p className="text-[10px] text-muted-foreground">e_above_hull</p>
+                        <p className="text-xs font-semibold text-primary font-mono">{Number(item.prediction.e_above_hull).toFixed(6)}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5 bg-background/50 border border-border">
+                        <p className="text-[10px] text-muted-foreground">volume</p>
+                        <p className="text-xs font-semibold text-primary font-mono">{Number(item.prediction.volume).toFixed(6)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
